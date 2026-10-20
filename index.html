@@ -182,6 +182,7 @@ main { padding-top: 16px; }
 .box.mine p { margin: 0; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
 .who { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .who button { min-height: 40px; border-radius: 999px; border: 1px solid rgba(255,255,255,.4); background: rgba(255,255,255,.14); color: #fff; padding: 4px 14px; font-size: 13px; font-weight: 700; }
+.who button.need { background: #ffd873; border-color: #ffd873; color: #2a1d00; font-size: 14px; min-height: 44px; }
 .who .st { font-size: 12.5px; opacity: .9; }
 .form { display: grid; gap: 12px; }
 .form label { display: grid; gap: 4px; font-size: 13px; font-weight: 800; color: var(--ink-2); }
@@ -239,6 +240,7 @@ main { padding-top: 16px; }
       <label>이름<input id="f-name" maxlength="20" placeholder="예: 홍길동" required></label>
       <p class="err" id="f-err" role="alert"></p>
       <button class="pbtn main" type="submit" id="f-ok">저장하고 불러오기</button>
+      <button class="pbtn" type="button" id="f-later">나중에 하기 (이 기기에만 저장)</button>
       <button class="pbtn" type="button" id="f-out">이 기기에서 내 정보 지우기</button>
     </form>
   </div>
@@ -976,7 +978,8 @@ const pendingIds = () => Object.keys(recs).filter(id => (recs[id].ts || 0) > (re
 function setSyncState(st) { syncState = st; renderWho(); }
 function renderWho() {
   const b = $('#who-btn'), st = $('#who-st');
-  if (!profile) { b.textContent = '👤 내 정보 입력'; st.textContent = '지금은 이 기기에만 저장돼요'; return; }
+  b.classList.toggle('need', !profile);
+  if (!profile) { b.textContent = '👤 학번·이름 입력하고 저장하기'; st.textContent = '입력 전에는 이 기기에만 저장돼요'; return; }
   b.textContent = `👤 ${profile.sid} ${profile.name}`;
   st.textContent = { pending: '☁️ 저장 중…', ok: '☁️ 선생님께 저장됨', err: '⚠️ 저장 실패 · 이 기기에는 저장됨(자동 재시도)', local: '' }[syncState] || '';
 }
@@ -1051,7 +1054,7 @@ document.addEventListener('click', e => {
 });
 $('#who-btn').addEventListener('click', () => {
   $('#f-sid').value = profile ? profile.sid : ''; $('#f-name').value = profile ? profile.name : ''; 
-  $('#f-err').textContent = ''; $('#f-out').style.display = profile ? '' : 'none';
+  $('#f-err').textContent = ''; $('#f-out').style.display = profile ? '' : 'none'; $('#f-later').style.display = profile ? 'none' : '';
   openOv('profile-ov', '#f-sid');
 });
 $('#profile-form').addEventListener('submit', async e => {
@@ -1071,6 +1074,7 @@ $('#profile-form').addEventListener('submit', async e => {
       : '학번과 이름을 확인해 주세요.';
   } finally { btn.disabled = false; btn.textContent = '저장하고 불러오기'; }
 });
+$('#f-later').addEventListener('click', () => closeOv('profile-ov'));
 $('#f-out').addEventListener('click', () => {
   if (!confirm('이 기기에서 내 정보를 지울까요?\n(서버에 저장된 기록은 그대로 있고, 이 기기의 체크·답은 남아요.)')) return;
   profile = null; try { localStorage.removeItem(PKEY); } catch (e) {}
@@ -1163,6 +1167,8 @@ document.addEventListener('keydown', e => {
 if (!profile) { const ps = loadJSON(PORTAL_KEY); if (ps && ps.sid && ps.name && String(ps.sid).length <= 12) { profile = { sid: String(ps.sid), name: String(ps.name) }; saveJSON(PKEY, profile); loadFromServer().then(() => { renderAll(); flushSync(); }).catch(() => {}); } }
 renderAll();
 renderWho();
+// 처음 들어오면 입력창을 바로 띄운다(정보를 입력할 때까지 접속할 때마다)
+if (!profile) setTimeout(() => { if (!profile && !document.querySelector('.overlay.open')) $('#who-btn').click(); }, 900);
 if (profile) { setSyncState(pendingIds().length ? 'pending' : 'ok'); if (pendingIds().length) flushSync(); }
 </script>
 </body>
