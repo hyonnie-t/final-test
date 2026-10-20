@@ -237,7 +237,6 @@ main { padding-top: 16px; }
       <p class="help">입력하지 않아도 이 기기에서는 그대로 쓸 수 있어요. 입력하면 내 체크·답이 선생님만 볼 수 있는 서버에 저장되고, 다른 기기에서도 이어 할 수 있어요. 공개된 곳에는 올라가지 않아요.</p>
       <label>학번<input id="f-sid" inputmode="numeric" maxlength="12" placeholder="예: 20101" required></label>
       <label>이름<input id="f-name" maxlength="20" placeholder="예: 홍길동" required></label>
-      <label>반 코드<input id="f-code" maxlength="30" placeholder="선생님이 알려준 코드" required></label>
       <p class="err" id="f-err" role="alert"></p>
       <button class="pbtn main" type="submit" id="f-ok">저장하고 불러오기</button>
       <button class="pbtn" type="button" id="f-out">이 기기에서 내 정보 지우기</button>
@@ -754,6 +753,7 @@ function saveState() { try { localStorage.setItem(KEY, JSON.stringify(checked));
  *                         ts=마지막 수정(ms), sy=서버에 반영된 ts. 서버에는 문항ID를 "Q12"로 보낸다. */
 const RKEY = 'final_test_records_v1';
 const PKEY = 'final_test_profile_v1';
+const PORTAL_KEY = 'portal_session';   // history26 포털 로그인({sid,name}) — 같은 github.io 출처라 읽을 수 있다
 const SET = 'checklist';
 const BACKEND = 'https://script.google.com/macros/s/AKfycbyXSjCfWY_HiZFqW_OBR-FQDoIfF1z_STqyKWUI31MacHeY3u7hbirFSFDvW-5yuUHaJQ/exec';
 function loadJSON(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
@@ -761,7 +761,7 @@ function saveJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } ca
 
 let checked = loadState();
 let recs = loadJSON(RKEY) || {};
-let profile = loadJSON(PKEY);   // { sid, name, code } | null
+let profile = loadJSON(PKEY);   // { sid, name } | null
 let era = 'goryeo';
 let topic = 'all';
 const ui = {};   // id -> { hint: 0|1|2, ans: bool, solve: bool }
@@ -1003,7 +1003,7 @@ async function flushSync() {
     const batch = ids.slice(0, 100);
     const sent = batch.map(id => ({ id, ts: recs[id].ts }));
     const items = batch.map(id => { const r = recs[id]; return { set: SET, qid: 'Q' + id, know: knowOf(+id), ans: r.ans || '', self: r.self || '', sub: !!r.sub, ts: r.ts }; });
-    const res = await api({ action: 'ftSubmit', studentId: profile.sid, name: profile.name, code: profile.code, items });
+    const res = await api({ action: 'ftSubmit', studentId: profile.sid, name: profile.name, items });
     if (res.result !== 'success') throw new Error(res.message || 'fail');
     sent.forEach(x => { if (recs[x.id]) recs[x.id].sy = Math.max(recs[x.id].sy || 0, x.ts); });
     saveRecs();
@@ -1019,7 +1019,7 @@ window.addEventListener('online', () => { if (pendingIds().length) queueSync(); 
 
 /* 로그인: 서버 기록을 불러와 합치고(더 새로운 쪽 우선), 옛 체크는 '안다'로 올려 보낸다 */
 async function loadFromServer() {
-  const res = await api({ action: 'ftLoad', studentId: profile.sid, name: profile.name, code: profile.code, set: SET });
+  const res = await api({ action: 'ftLoad', studentId: profile.sid, name: profile.name, set: SET });
   if (res.result !== 'success') throw new Error(res.message || '불러오기 실패');
   (res.items || []).forEach(it => {
     const m = /^Q(\d+)$/.exec(it.qid); if (!m || it.set !== SET) return;
@@ -1050,16 +1050,16 @@ document.addEventListener('click', e => {
   if (e.target.classList && e.target.classList.contains('overlay') && e.target.id !== 'overlay') closeOv(e.target.id);
 });
 $('#who-btn').addEventListener('click', () => {
-  $('#f-sid').value = profile ? profile.sid : ''; $('#f-name').value = profile ? profile.name : ''; $('#f-code').value = profile ? profile.code : '';
+  $('#f-sid').value = profile ? profile.sid : ''; $('#f-name').value = profile ? profile.name : ''; 
   $('#f-err').textContent = ''; $('#f-out').style.display = profile ? '' : 'none';
   openOv('profile-ov', '#f-sid');
 });
 $('#profile-form').addEventListener('submit', async e => {
   e.preventDefault();
-  const sid = $('#f-sid').value.trim(), name = $('#f-name').value.trim(), code = $('#f-code').value.trim();
+  const sid = $('#f-sid').value.trim(), name = $('#f-name').value.trim();
   const btn = $('#f-ok'); btn.disabled = true; btn.textContent = '확인 중…'; $('#f-err').textContent = '';
   const prev = profile;
-  profile = { sid, name, code };
+  profile = { sid, name };
   try {
     await loadFromServer();
     saveJSON(PKEY, profile);
@@ -1068,7 +1068,7 @@ $('#profile-form').addEventListener('submit', async e => {
     profile = prev;
     $('#f-err').textContent = err instanceof TypeError || err.name === 'AbortError'
       ? '서버에 연결하지 못했어요. 네트워크를 확인해 주세요. (이 기기에서는 계속 쓸 수 있어요)'
-      : '학번·이름·코드를 확인해 주세요.';
+      : '학번과 이름을 확인해 주세요.';
   } finally { btn.disabled = false; btn.textContent = '저장하고 불러오기'; }
 });
 $('#f-out').addEventListener('click', () => {
@@ -1159,6 +1159,8 @@ document.addEventListener('keydown', e => {
   ['profile-ov', 'teacher-ov'].forEach(id => { if ($('#' + id).classList.contains('open')) closeOv(id); });
 });
 
+// 포털에 이미 로그인돼 있으면 같은 학번·이름으로 바로 연결한다
+if (!profile) { const ps = loadJSON(PORTAL_KEY); if (ps && ps.sid && ps.name && String(ps.sid).length <= 12) { profile = { sid: String(ps.sid), name: String(ps.name) }; saveJSON(PKEY, profile); loadFromServer().then(() => { renderAll(); flushSync(); }).catch(() => {}); } }
 renderAll();
 renderWho();
 if (profile) { setSyncState(pendingIds().length ? 'pending' : 'ok'); if (pendingIds().length) flushSync(); }
