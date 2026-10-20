@@ -161,6 +161,40 @@ main { padding-top: 16px; }
 .sheet-foot { padding: 10px 20px 14px; border-top: 1px solid var(--line); }
 .sheet-foot button { width: 100%; min-height: 48px; border: 0; border-radius: 14px; background: var(--brand); color: var(--brand-ink); font-weight: 800; font-size: 16px; }
 
+/* ---------- 체크(안다/모른다) · 풀기 · 로그인 ---------- */
+.card.unknown { border-color: var(--accent); background: color-mix(in srgb, var(--hint-soft) 45%, var(--surface)); }
+.tag { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 1px 9px; background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
+.tag.ok { background: var(--ok-soft); color: var(--ans); border-color: transparent; }
+.tag.warn { background: var(--hint-soft); color: var(--hint); border-color: transparent; }
+.know { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.kbtn { min-height: var(--tap); border-radius: 12px; border: 2px solid var(--line); background: var(--surface); font-weight: 800; font-size: 15px; }
+.kbtn[aria-pressed="true"].k { background: var(--ok); border-color: var(--ok); color: #fff; }
+.kbtn[aria-pressed="true"].u { background: var(--accent); border-color: var(--accent); color: #2a1d00; }
+.actions { grid-template-columns: 1fr 1fr; }
+.solve { margin-top: 12px; display: grid; gap: 8px; }
+.solve label { font-size: 13px; font-weight: 800; color: var(--brand); }
+.solve textarea { width: 100%; min-height: 110px; resize: vertical; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font: inherit; font-size: 16px; line-height: 1.6; background: var(--surface); color: var(--ink); }
+.solve .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pbtn { min-height: var(--tap); border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); font-weight: 700; font-size: 14px; padding: 6px 10px; }
+.pbtn.main { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); font-weight: 800; }
+.pbtn.on { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); }
+.box.mine { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
+.box.mine p { margin: 0; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+.who { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.who button { min-height: 40px; border-radius: 999px; border: 1px solid rgba(255,255,255,.4); background: rgba(255,255,255,.14); color: #fff; padding: 4px 14px; font-size: 13px; font-weight: 700; }
+.who .st { font-size: 12.5px; opacity: .9; }
+.form { display: grid; gap: 12px; }
+.form label { display: grid; gap: 4px; font-size: 13px; font-weight: 800; color: var(--ink-2); }
+.form input, .form select { min-height: var(--tap); border: 1px solid var(--line); border-radius: 12px; padding: 6px 12px; font: inherit; font-size: 16px; background: var(--surface); color: var(--ink); width: 100%; }
+.form .help { font-size: 13px; color: var(--ink-3); margin: 0; }
+.form .err { font-size: 13.5px; color: #c0392b; margin: 0; font-weight: 700; }
+.tsum { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.tsum td, .tsum th { padding: 4px 6px; border-bottom: 1px solid var(--line); text-align: left; }
+.tlist details { border: 1px solid var(--line); border-radius: 12px; padding: 6px 12px; margin-bottom: 8px; background: var(--surface-2); }
+.tlist summary { cursor: pointer; font-weight: 700; font-size: 14px; min-height: 36px; display: flex; align-items: center; }
+.tlist .ans-line { border-top: 1px dashed var(--line); padding: 6px 0; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.foot .reset + .reset { margin-left: 8px; }
+
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 </head>
@@ -176,6 +210,7 @@ main { padding-top: 16px; }
       <div class="progress-top"><span class="big" id="progress-text">0 / 63</span><span class="sub" id="progress-pct">0%</span></div>
       <div class="bar" role="progressbar" aria-label="전체 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress-bar-wrap"><i id="progress-bar"></i></div>
     </div>
+    <div class="who"><button id="who-btn">👤 내 정보 입력</button><span class="st" id="who-st" aria-live="polite"></span></div>
   </div>
 </header>
 
@@ -189,8 +224,43 @@ main { padding-top: 16px; }
 <main class="wrap">
   <div class="topic-bar"><span class="t" id="topic-title"></span><span class="c" id="topic-progress"></span></div>
   <div class="list" id="list"></div>
-  <div class="foot"><button class="reset" id="reset">체크 기록 초기화</button></div>
+  <div class="foot"><button class="reset" id="reset">체크 기록 초기화</button><button class="reset" id="teacher-btn">교사용 기록</button></div>
 </main>
+
+<div class="overlay" id="profile-ov" role="dialog" aria-modal="true" aria-labelledby="profile-h">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div class="tt"><div class="lab">👤 내 정보</div><h2 id="profile-h">내 기록을 선생님께 저장하기</h2></div>
+      <button class="close" data-close="profile-ov" aria-label="닫기">✕</button>
+    </div>
+    <form class="sheet-body form" id="profile-form" autocomplete="off">
+      <p class="help">입력하지 않아도 이 기기에서는 그대로 쓸 수 있어요. 입력하면 내 체크·답이 선생님만 볼 수 있는 서버에 저장되고, 다른 기기에서도 이어 할 수 있어요. 공개된 곳에는 올라가지 않아요.</p>
+      <label>학번<input id="f-sid" inputmode="numeric" maxlength="12" placeholder="예: 20101" required></label>
+      <label>이름<input id="f-name" maxlength="20" placeholder="예: 홍길동" required></label>
+      <label>반 코드<input id="f-code" maxlength="30" placeholder="선생님이 알려준 코드" required></label>
+      <p class="err" id="f-err" role="alert"></p>
+      <button class="pbtn main" type="submit" id="f-ok">저장하고 불러오기</button>
+      <button class="pbtn" type="button" id="f-out">이 기기에서 내 정보 지우기</button>
+    </form>
+  </div>
+</div>
+
+<div class="overlay" id="teacher-ov" role="dialog" aria-modal="true" aria-labelledby="teacher-h">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div class="tt"><div class="lab">🧑‍🏫 교사용</div><h2 id="teacher-h">학생 기록 모아 보기</h2></div>
+      <button class="close" data-close="teacher-ov" aria-label="닫기">✕</button>
+    </div>
+    <div class="sheet-body">
+      <form class="form" id="teacher-form" autocomplete="off">
+        <label>교사 토큰<input id="t-token" type="password" autocomplete="off" required></label>
+        <button class="pbtn main" type="submit">기록 불러오기</button>
+        <p class="err" id="t-err" role="alert"></p>
+      </form>
+      <div id="t-out" class="tlist"></div>
+    </div>
+  </div>
+</div>
 
 <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="sheet-q">
   <div class="sheet">
@@ -678,14 +748,36 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 function loadState() { try { return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { return {}; } }
 function saveState() { try { localStorage.setItem(KEY, JSON.stringify(checked)); } catch (e) {} }
 
+/* 기록 구조
+ * checked[id]=true      : 예전 "이해 완료" 체크(= 안다). 옛 기록 호환을 위해 그대로 유지·동기화한다.
+ * recs[id]              : { know:'know'|'unknown', ans, self:'ok'|'unsure', sub:bool, ts, sy }
+ *                         ts=마지막 수정(ms), sy=서버에 반영된 ts. 서버에는 문항ID를 "Q12"로 보낸다. */
+const RKEY = 'final_test_records_v1';
+const PKEY = 'final_test_profile_v1';
+const SET = 'checklist';
+const BACKEND = 'https://script.google.com/macros/s/AKfycbyXSjCfWY_HiZFqW_OBR-FQDoIfF1z_STqyKWUI31MacHeY3u7hbirFSFDvW-5yuUHaJQ/exec';
+function loadJSON(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
+function saveJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+
 let checked = loadState();
+let recs = loadJSON(RKEY) || {};
+let profile = loadJSON(PKEY);   // { sid, name, code } | null
 let era = 'goryeo';
 let topic = 'all';
-const ui = {};   // id -> { hint: 0|1|2, ans: bool }
+const ui = {};   // id -> { hint: 0|1|2, ans: bool, solve: bool }
 let lastFocus = null;
 
 const byEra = e => QUESTIONS.filter(q => q.era === e);
-const isDone = id => !!checked[id];
+const saveRecs = () => saveJSON(RKEY, recs);
+const knowOf = id => (recs[id] && recs[id].know) || (checked[id] ? 'know' : '');
+const isDone = id => knowOf(id) === 'know';
+function touch(id) { const r = recs[id] || (recs[id] = {}); r.ts = Math.max(Date.now(), (r.ts || 0) + 1); return r; }
+function setKnow(id, v) {
+  const r = touch(id);
+  r.know = (r.know === v || (!r.know && knowOf(id) === v)) ? '' : v;   // 같은 버튼을 다시 누르면 해제
+  if (r.know === 'know') checked[id] = true; else delete checked[id];
+  saveState(); saveRecs(); queueSync();
+}
 const pageOf = q => q.refs.map(r => PASSAGES[r].page).filter((v, i, a) => a.indexOf(v) === i).join(' · ');
 
 /* ---------- 상단 ---------- */
@@ -712,7 +804,8 @@ function updateProgress() {
   const n = QUESTIONS.filter(q => isDone(q.id)).length;
   const pct = Math.round(n / total * 100);
   $('#progress-text').textContent = `${n} / ${total}`;
-  $('#progress-pct').textContent = `${pct}% 달성`;
+  const unk = QUESTIONS.filter(q => knowOf(q.id) === 'unknown').length;
+  $('#progress-pct').textContent = `안다 ${pct}%` + (unk ? ` · 모른다 ${unk}` : '');
   $('#progress-bar').style.width = pct + '%';
   $('#progress-bar-wrap').setAttribute('aria-valuenow', pct);
 }
@@ -729,30 +822,64 @@ function revealHTML(q) {
   let h = '';
   if (s.hint >= 1) h += `<div class="box hint"><b>💡 힌트 1</b>${esc(q.h[0])}</div>`;
   if (s.hint >= 2) h += `<div class="box hint"><b>💡 힌트 2</b>${esc(q.h[1])}</div>`;
-  if (s.ans) {
+  if (s.ans && !(s.solve && recs[q.id] && recs[q.id].sub)) {
     const a = Array.isArray(q.a) ? `<ul>${q.a.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : `<p>${esc(q.a)}</p>`;
     h += `<div class="box ans"><b>✅ 정답</b>${a}</div>`;
   }
   return h;
 }
+function ansBoxHTML(q) {
+  const a = Array.isArray(q.a) ? `<ul>${q.a.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : `<p>${esc(q.a)}</p>`;
+  return `<div class="box ans"><b>✅ 정답</b>${a}</div>`;
+}
+function solveHTML(q) {
+  const r = recs[q.id] || {};
+  if (!r.sub) {
+    return `<div class="solve">
+      <label for="ab${q.id}">✍️ 내 답을 직접 써 보세요</label>
+      <textarea id="ab${q.id}" data-ansbox maxlength="3000" placeholder="교과서를 보지 않고 기억나는 대로 적어요">${esc(r.ans || '')}</textarea>
+      <button class="pbtn main" data-act="submit">제출하고 정답과 비교하기</button>
+    </div>`;
+  }
+  return `<div class="solve">
+    <div class="box mine"><b>✍️ 내가 쓴 답</b><p>${esc(r.ans || '(비워서 제출함)')}</p></div>
+    ${ansBoxHTML(q)}
+    <div><b style="font-size:13px">정답과 비교해서 스스로 표시해요</b></div>
+    <div class="row">
+      <button class="pbtn ${r.self === 'ok' ? 'on' : ''}" data-act="self" data-v="ok" aria-pressed="${r.self === 'ok'}">✅ 맞았어요</button>
+      <button class="pbtn ${r.self === 'unsure' ? 'on' : ''}" data-act="self" data-v="unsure" aria-pressed="${r.self === 'unsure'}">🤔 헷갈려요</button>
+    </div>
+    <button class="pbtn" data-act="redo">✏️ 다시 쓰기</button>
+  </div>`;
+}
+function cardClass(id) { const k = knowOf(id); return 'card' + (k === 'know' ? ' done' : k === 'unknown' ? ' unknown' : ''); }
 function cardHTML(q) {
   const s = ui[q.id] || {};
-  const done = isDone(q.id);
+  const r = recs[q.id] || {};
+  const k = knowOf(q.id);
   const hintLabel = !s.hint ? '💡 힌트' : (s.hint === 1 ? '💡 힌트 더 보기' : '💡 힌트 끝');
+  const tags = (r.sub ? '<span class="tag">✍️ 제출</span>' : '')
+    + (r.sub && r.self === 'ok' ? '<span class="tag ok">맞음</span>' : '')
+    + (r.sub && r.self === 'unsure' ? '<span class="tag warn">헷갈림</span>' : '');
   return `
     <div class="card-main">
-      <button class="check" aria-pressed="${done}" aria-label="Q${q.id} 이해 완료 표시" data-act="check">✓</button>
       <div class="card-body">
-        <div class="meta"><span class="num">Q${q.id}</span><span class="page">교재 ${esc(pageOf(q))}</span></div>
+        <div class="meta"><span class="num">Q${q.id}</span><span class="page">교재 ${esc(pageOf(q))}</span>${tags}</div>
         <p class="qtext">${esc(q.q)}</p>
       </div>
+    </div>
+    <div class="know" role="group" aria-label="Q${q.id} 알고 있는지 체크">
+      <button class="kbtn k" data-act="know" aria-pressed="${k === 'know'}">😊 안다</button>
+      <button class="kbtn u" data-act="unknown" aria-pressed="${k === 'unknown'}">🤔 모른다</button>
     </div>
     <div class="actions">
       <button class="act hint" data-act="hint" aria-expanded="${!!s.hint}" ${s.hint >= 2 ? 'disabled' : ''}>${hintLabel}</button>
       <button class="act" data-act="src">📖 교과서</button>
       <button class="act ans" data-act="ans" aria-expanded="${!!s.ans}">${s.ans ? '정답 숨기기' : '✅ 정답 보기'}</button>
+      <button class="act" data-act="solve" aria-expanded="${!!s.solve}">${s.solve ? '풀기 닫기' : '✍️ 풀기'}</button>
     </div>
-    <div class="reveal">${revealHTML(q)}</div>`;
+    <div class="reveal">${revealHTML(q)}</div>
+    ${s.solve ? solveHTML(q) : ''}`;
 }
 function renderList() {
   const list = currentList();
@@ -761,16 +888,16 @@ function renderList() {
   const tp = TOPICS[era].find(t => t.id === topic);
   $('#topic-title').textContent = era === 'review' ? '아직 체크하지 않은 질문'
     : (topic === 'all' ? (era === 'goryeo' ? '고려 전체' : '조선 전체') : (tp ? tp.full : ''));
-  $('#topic-progress').textContent = `${doneN} / ${list.length} 완료`;
+  $('#topic-progress').textContent = `${doneN} / ${list.length} 안다`;
 
   if (!list.length) {
-    box.innerHTML = `<div class="empty"><div class="big">🎉</div><strong>모두 확인했어요!</strong>표시할 질문이 없습니다.</div>`;
+    box.innerHTML = `<div class="empty"><div class="big">🎉</div><strong>모두 안다고 표시했어요!</strong>다시 볼 질문이 없습니다.</div>`;
     return;
   }
   box.innerHTML = '';
   list.forEach(q => {
     const el = document.createElement('article');
-    el.className = 'card' + (isDone(q.id) ? ' done' : '');
+    el.className = cardClass(q.id);
     el.dataset.id = q.id;
     el.innerHTML = cardHTML(q);
     box.appendChild(el);
@@ -780,7 +907,7 @@ function refreshCard(id) {
   const q = QUESTIONS.find(x => x.id === id);
   const el = $(`.card[data-id="${id}"]`);
   if (!q || !el) return;
-  el.className = 'card' + (isDone(id) ? ' done' : '');
+  el.className = cardClass(id);
   el.innerHTML = cardHTML(q);
 }
 function renderAll() { renderTabs(); renderChips(); renderList(); updateProgress(); }
@@ -797,15 +924,30 @@ $('#chips').addEventListener('click', e => {
 $('#list').addEventListener('click', e => {
   const btn = e.target.closest('[data-act]'); if (!btn) return;
   const card = btn.closest('.card'); const id = +card.dataset.id;
-  const s = ui[id] || (ui[id] = { hint: 0, ans: false });
+  const s = ui[id] || (ui[id] = { hint: 0, ans: false, solve: false });
   const act = btn.dataset.act;
-  if (act === 'check') {
-    checked[id] = !checked[id]; saveState();
-    if (era === 'review' && checked[id]) { renderAll(); return; }
+  const focusAct = (a, v) => { const nb = $(`.card[data-id="${id}"] [data-act="${a}"]${v ? `[data-v="${v}"]` : ''}`); if (nb && !nb.disabled) nb.focus(); };
+  if (act === 'know' || act === 'unknown') {
+    setKnow(id, act);
+    if (era === 'review' && isDone(id)) { renderAll(); return; }
     refreshCard(id); renderTabs(); updateProgress();
     const list = currentList(); const doneN = list.filter(q => isDone(q.id)).length;
-    $('#topic-progress').textContent = `${doneN} / ${list.length} 완료`;
-    const nb = $(`.card[data-id="${id}"] [data-act="check"]`); if (nb) nb.focus();
+    $('#topic-progress').textContent = `${doneN} / ${list.length} 안다`;
+    focusAct(act);
+  } else if (act === 'solve') {
+    s.solve = !s.solve; refreshCard(id);
+    if (s.solve) { const t = $(`.card[data-id="${id}"] [data-ansbox]`); if (t) t.focus(); else focusAct('solve'); } else focusAct('solve');
+  } else if (act === 'submit') {
+    const t = $(`.card[data-id="${id}"] [data-ansbox]`);
+    const r = touch(id); r.ans = t ? t.value.trim() : (r.ans || ''); r.sub = true; r.self = '';
+    saveRecs(); queueSync(); refreshCard(id); focusAct('self', 'ok');
+  } else if (act === 'self') {
+    const r = touch(id); r.self = r.self === btn.dataset.v ? '' : btn.dataset.v;
+    saveRecs(); queueSync(); refreshCard(id); focusAct('self', btn.dataset.v);
+  } else if (act === 'redo') {
+    const r = touch(id); r.sub = false; r.self = '';
+    saveRecs(); queueSync(); refreshCard(id);
+    const t = $(`.card[data-id="${id}"] [data-ansbox]`); if (t) t.focus();
   } else if (act === 'hint') {
     s.hint = Math.min(2, s.hint + 1); refreshCard(id);
     const nb = $(`.card[data-id="${id}"] [data-act="hint"]`); if (nb && !nb.disabled) nb.focus();
@@ -816,9 +958,172 @@ $('#list').addEventListener('click', e => {
     openSource(id, btn);
   }
 });
-$('#reset').addEventListener('click', () => {
-  if (confirm('체크한 기록을 모두 지울까요?')) { checked = {}; saveState(); renderAll(); }
+$('#list').addEventListener('input', e => {
+  const t = e.target.closest('[data-ansbox]'); if (!t) return;
+  const id = +t.closest('.card').dataset.id;
+  (recs[id] || (recs[id] = {})).ans = t.value;   // 쓰는 중인 글은 이 기기에만 임시 저장(서버 전송은 제출할 때)
+  clearTimeout(t._d); t._d = setTimeout(saveRecs, 400);
 });
+$('#reset').addEventListener('click', () => {
+  if (confirm('이 기기에 저장된 체크·답 기록을 모두 지울까요?\n(서버에 이미 저장된 기록은 지워지지 않아요.)')) {
+    checked = {}; recs = {}; saveState(); saveRecs(); renderAll();
+  }
+});
+
+/* ---------- 서버 동기화 (실패해도 앱은 localStorage로 계속 동작) ---------- */
+let syncTimer = null, syncing = false, syncState = 'local';   // local | pending | ok | err
+const pendingIds = () => Object.keys(recs).filter(id => (recs[id].ts || 0) > (recs[id].sy || 0));
+function setSyncState(st) { syncState = st; renderWho(); }
+function renderWho() {
+  const b = $('#who-btn'), st = $('#who-st');
+  if (!profile) { b.textContent = '👤 내 정보 입력'; st.textContent = '지금은 이 기기에만 저장돼요'; return; }
+  b.textContent = `👤 ${profile.sid} ${profile.name}`;
+  st.textContent = { pending: '☁️ 저장 중…', ok: '☁️ 선생님께 저장됨', err: '⚠️ 저장 실패 · 이 기기에는 저장됨(자동 재시도)', local: '' }[syncState] || '';
+}
+async function api(body, query) {
+  const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 20000);
+  try {
+    const r = query
+      ? await fetch(BACKEND + '?' + query, { signal: ctl.signal })
+      : await fetch(BACKEND, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), signal: ctl.signal });
+    return await r.json();
+  } finally { clearTimeout(to); }
+}
+function queueSync() {
+  if (!profile) return;
+  setSyncState('pending');
+  clearTimeout(syncTimer); syncTimer = setTimeout(flushSync, 1200);
+}
+async function flushSync() {
+  if (!profile || syncing) return;
+  const ids = pendingIds();
+  if (!ids.length) { setSyncState('ok'); return; }
+  syncing = true;
+  try {
+    const batch = ids.slice(0, 100);
+    const sent = batch.map(id => ({ id, ts: recs[id].ts }));
+    const items = batch.map(id => { const r = recs[id]; return { set: SET, qid: 'Q' + id, know: knowOf(+id), ans: r.ans || '', self: r.self || '', sub: !!r.sub, ts: r.ts }; });
+    const res = await api({ action: 'ftSubmit', studentId: profile.sid, name: profile.name, code: profile.code, items });
+    if (res.result !== 'success') throw new Error(res.message || 'fail');
+    sent.forEach(x => { if (recs[x.id]) recs[x.id].sy = Math.max(recs[x.id].sy || 0, x.ts); });
+    saveRecs();
+    syncing = false;
+    if (pendingIds().length) return flushSync();
+    setSyncState('ok');
+  } catch (err) {
+    syncing = false; setSyncState('err');
+    clearTimeout(syncTimer); syncTimer = setTimeout(flushSync, 60000);
+  }
+}
+window.addEventListener('online', () => { if (pendingIds().length) queueSync(); });
+
+/* 로그인: 서버 기록을 불러와 합치고(더 새로운 쪽 우선), 옛 체크는 '안다'로 올려 보낸다 */
+async function loadFromServer() {
+  const res = await api({ action: 'ftLoad', studentId: profile.sid, name: profile.name, code: profile.code, set: SET });
+  if (res.result !== 'success') throw new Error(res.message || '불러오기 실패');
+  (res.items || []).forEach(it => {
+    const m = /^Q(\d+)$/.exec(it.qid); if (!m || it.set !== SET) return;
+    const id = +m[1]; if (!QUESTIONS.some(q => q.id === id)) return;
+    const loc = recs[id];
+    if (!loc || (it.ts || 0) > (loc.ts || 0)) {
+      recs[id] = { know: it.know || '', ans: it.ans || '', self: it.self || '', sub: !!it.sub, ts: it.ts || 0, sy: it.ts || 0 };
+    }
+  });
+  Object.keys(checked).forEach(id => { if (checked[id] && !recs[id]) recs[id] = { know: 'know', ts: 1, sy: 0 }; });
+  Object.keys(recs).forEach(id => { if (recs[id].know === 'know') checked[id] = true; else if (recs[id].know === 'unknown') delete checked[id]; });
+  saveState(); saveRecs();
+}
+
+/* ---------- 내 정보(학번·이름·코드) ---------- */
+function openOv(id, focusSel) {
+  const o = $('#' + id); lastFocus = document.activeElement;
+  o.classList.add('open'); document.body.style.overflow = 'hidden';
+  const f = focusSel && $(focusSel); if (f) f.focus();
+}
+function closeOv(id) {
+  $('#' + id).classList.remove('open');
+  if (!document.querySelector('.overlay.open')) document.body.style.overflow = '';
+  if (lastFocus && lastFocus.focus) lastFocus.focus();
+}
+document.addEventListener('click', e => {
+  const c = e.target.closest('[data-close]'); if (c) closeOv(c.dataset.close);
+  if (e.target.classList && e.target.classList.contains('overlay') && e.target.id !== 'overlay') closeOv(e.target.id);
+});
+$('#who-btn').addEventListener('click', () => {
+  $('#f-sid').value = profile ? profile.sid : ''; $('#f-name').value = profile ? profile.name : ''; $('#f-code').value = profile ? profile.code : '';
+  $('#f-err').textContent = ''; $('#f-out').style.display = profile ? '' : 'none';
+  openOv('profile-ov', '#f-sid');
+});
+$('#profile-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const sid = $('#f-sid').value.trim(), name = $('#f-name').value.trim(), code = $('#f-code').value.trim();
+  const btn = $('#f-ok'); btn.disabled = true; btn.textContent = '확인 중…'; $('#f-err').textContent = '';
+  const prev = profile;
+  profile = { sid, name, code };
+  try {
+    await loadFromServer();
+    saveJSON(PKEY, profile);
+    closeOv('profile-ov'); renderAll(); setSyncState('pending'); flushSync();
+  } catch (err) {
+    profile = prev;
+    $('#f-err').textContent = err instanceof TypeError || err.name === 'AbortError'
+      ? '서버에 연결하지 못했어요. 네트워크를 확인해 주세요. (이 기기에서는 계속 쓸 수 있어요)'
+      : '학번·이름·코드를 확인해 주세요.';
+  } finally { btn.disabled = false; btn.textContent = '저장하고 불러오기'; }
+});
+$('#f-out').addEventListener('click', () => {
+  if (!confirm('이 기기에서 내 정보를 지울까요?\n(서버에 저장된 기록은 그대로 있고, 이 기기의 체크·답은 남아요.)')) return;
+  profile = null; try { localStorage.removeItem(PKEY); } catch (e) {}
+  setSyncState('local'); closeOv('profile-ov');
+});
+
+/* ---------- 교사용: 기록 모아 보기 ---------- */
+let tRows = [];
+$('#teacher-btn').addEventListener('click', () => openOv('teacher-ov', '#t-token'));
+$('#teacher-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const token = $('#t-token').value.trim(); $('#t-err').textContent = '';
+  try {
+    const res = await api(null, 'mode=ftAdmin&set=' + SET + '&token=' + encodeURIComponent(token));
+    if (res.result !== 'success') throw new Error(res.message || '실패');
+    tRows = res.rows || []; renderTeacher();
+  } catch (err) { $('#t-err').textContent = '불러오지 못했어요: ' + (err.message || err); }
+});
+const qOf = qid => QUESTIONS.find(q => 'Q' + q.id === qid);
+const selLabel = r => r.sub ? (r.self === 'ok' ? '맞음' : r.self === 'unsure' ? '헷갈림' : '자기채점 전') : '';
+function ansLines(rows, who) {
+  return rows.map(r => `<div class="ans-line"><b>${esc(who === 'q' ? r.studentId + ' ' + r.name : r.qid)}</b> · ${r.know === 'know' ? '안다' : r.know === 'unknown' ? '모른다' : '체크 없음'}${r.sub ? ' · 제출 · ' + selLabel(r) : ''}${r.sub ? '\n' + esc(r.ans || '(빈 답)') : ''}</div>`).join('');
+}
+function renderTeacher() {
+  const students = {}; const qs = {};
+  tRows.forEach(r => { (students[r.studentId + ' ' + r.name] = students[r.studentId + ' ' + r.name] || []).push(r); (qs[r.qid] = qs[r.qid] || []).push(r); });
+  const qKeys = Object.keys(qs).sort((a, b) => {
+    const un = k => qs[k].filter(r => r.know === 'unknown').length;
+    return un(b) - un(a) || parseInt(a.slice(1)) - parseInt(b.slice(1));
+  });
+  const sKeys = Object.keys(students).sort();
+  const byQ = qKeys.map(k => {
+    const rs = qs[k], q = qOf(k);
+    const c = f => rs.filter(f).length;
+    return `<details><summary>${esc(k)} · 모른다 ${c(r => r.know === 'unknown')} · 안다 ${c(r => r.know === 'know')} · 제출 ${c(r => r.sub)} · 헷갈림 ${c(r => r.sub && r.self === 'unsure')}</summary>${q ? `<div class="ans-line">${esc(q.q)}</div>` : ''}${ansLines(rs, 'q')}</details>`;
+  }).join('');
+  const byS = sKeys.map(k => {
+    const rs = students[k].slice().sort((a, b) => parseInt(a.qid.slice(1)) - parseInt(b.qid.slice(1)));
+    return `<details><summary>${esc(k)} · 기록 ${rs.length} · 모른다 ${rs.filter(r => r.know === 'unknown').length} · 제출 ${rs.filter(r => r.sub).length}</summary>${ansLines(rs, 's')}</details>`;
+  }).join('');
+  $('#t-out').innerHTML = `<p class="help">학생 ${sKeys.length}명 · 기록 ${tRows.length}건 <button class="pbtn" id="t-csv" type="button">CSV 저장</button></p>
+    <h3 style="font-size:15px;margin:14px 0 6px">문항별 (모른다가 많은 순)</h3>${byQ || '<p class="help">아직 기록이 없어요.</p>'}
+    <h3 style="font-size:15px;margin:14px 0 6px">학생별</h3>${byS || ''}`;
+  $('#t-csv').addEventListener('click', downloadCSV);
+}
+function downloadCSV() {
+  const cell = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const head = ['학번', '이름', '문항ID', '체크', '제출', '자기채점', '서술답', '시각'];
+  const lines = [head].concat(tRows.map(r => [r.studentId, r.name, r.qid, r.know === 'know' ? '안다' : r.know === 'unknown' ? '모른다' : '', r.sub ? 'Y' : '', r.self === 'ok' ? '맞음' : r.self === 'unsure' ? '헷갈림' : '', r.ans, r.time]));
+  const blob = new Blob(['﻿' + lines.map(l => l.map(cell).join(',')).join('\r\n')], { type: 'text/csv' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = '기말점검_기록.csv'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
 
 /* ---------- 교과서 본문 시트 ---------- */
 function paraHTML(p) {
@@ -849,10 +1154,14 @@ $('#close').addEventListener('click', closeSource);
 $('#close2').addEventListener('click', closeSource);
 $('#overlay').addEventListener('click', e => { if (e.target.id === 'overlay') closeSource(); });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && $('#overlay').classList.contains('open')) closeSource();
+  if (e.key !== 'Escape') return;
+  if ($('#overlay').classList.contains('open')) closeSource();
+  ['profile-ov', 'teacher-ov'].forEach(id => { if ($('#' + id).classList.contains('open')) closeOv(id); });
 });
 
 renderAll();
+renderWho();
+if (profile) { setSyncState(pendingIds().length ? 'pending' : 'ok'); if (pendingIds().length) flushSync(); }
 </script>
 </body>
 </html>
