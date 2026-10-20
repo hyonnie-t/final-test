@@ -1164,7 +1164,7 @@ document.addEventListener('keydown', e => {
 });
 
 // 포털에 이미 로그인돼 있으면 같은 학번·이름으로 바로 연결한다
-if (!profile) { const ps = loadJSON(PORTAL_KEY); if (ps && ps.sid && ps.name && String(ps.sid).length <= 12) { profile = { sid: String(ps.sid), name: String(ps.name) }; saveJSON(PKEY, profile); loadFromServer().then(() => { renderAll(); flushSync(); }).catch(() => {}); } }
+if (!profile) { const ps = loadJSON(PORTAL_KEY) || loadJSON('portal_handoff'); if (ps && ps.sid && ps.name && String(ps.sid).length <= 12) { profile = { sid: String(ps.sid), name: String(ps.name) }; saveJSON(PKEY, profile); loadFromServer().then(() => { renderAll(); flushSync(); }).catch(() => {}); } }
 renderAll();
 renderWho();
 // 처음 들어오면 입력창을 바로 띄운다(정보를 입력할 때까지 접속할 때마다)
