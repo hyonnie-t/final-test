@@ -1,7 +1,7 @@
 # final-test — 2학기 기말고사 대비 질문 체크리스트
 
 기말 대비 웹앱. 학생이 질문 목록을 «안다/모른다»로 체크하고 풀어 본 뒤 자기채점한다. 교사용 기록 보기가 있다.
-배포: https://hyonnie-t.github.io/final-test/ (GitHub Pages). 파일은 `index.html` 하나뿐이다(큰 파일이니 통째로 읽지 말고 grep으로 위치를 찾는다).
+배포: https://hyonnie-t.github.io/final-test/ (GitHub Pages). 코드는 `index.html` 하나에 다 있다(큰 파일이니 통째로 읽지 말고 grep으로 위치를 찾는다). 그 밖에는 표지·공유 그림 `cover.webp`·`og-cover.jpg`뿐이다.
 
 ## 규칙
 - 기록 저장은 `history26_backend`의 `ftSubmit`/`ftLoad`(v80)를 쓴다. 로그인은 학번+이름만(반 코드 없음), 포털 로그인과 연결된다.
